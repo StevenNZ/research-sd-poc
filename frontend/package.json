@@ -1,0 +1,29 @@
+{
+  "name": "material-ui-vite-ts",
+  "private": true,
+  "version": "5.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@emotion/react": "^11.13.3",
+    "@emotion/styled": "^11.13.0",
+    "@mui/icons-material": "latest",
+    "@mui/material": "^6.1.1",
+    "@wavesurfer/react": "^1.0.7",
+    "react": "latest",
+    "react-audio-voice-recorder": "^2.2.0",
+    "react-dom": "latest",
+    "wavesurfer.js": "^7.8.6"
+  },
+  "devDependencies": {
+    "@types/react": "latest",
+    "@types/react-dom": "latest",
+    "@vitejs/plugin-react": "latest",
+    "typescript": "latest",
+    "vite": "latest"
+  }
+}

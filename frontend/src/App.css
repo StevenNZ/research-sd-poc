@@ -1,0 +1,14 @@
+.audio-recorder {
+  max-width: 200px;
+}
+
+.audio-recorder-visualizer canvas {
+  height: 30px;
+  width: 20px;
+}
+
+.audio-recorder-dark {
+}
+
+.audio-recorder-mic-dark {
+}
