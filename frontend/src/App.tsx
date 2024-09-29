@@ -1,8 +1,8 @@
 import { useRef, useState } from "react";
-import Container from "@mui/material/Container";
+import { ThemeProvider } from "@mui/material/styles";
+import { CssBaseline, useTheme } from "@mui/material";
 import Typography from "@mui/material/Typography";
 import Box from "@mui/material/Box";
-import WavesurferPlayer from "@wavesurfer/react";
 import {
   AppBar,
   Button,
@@ -17,7 +17,6 @@ import {
   Event,
   FilePresentRounded,
   MessageRounded,
-  Mic,
   Person,
   Upload,
 } from "@mui/icons-material";
@@ -26,12 +25,21 @@ import Wave from "./wave";
 import { AudioRecorder } from "react-audio-voice-recorder";
 import "./App.css";
 import { mockSummary } from "./mock";
+import DarkModeIcon from "@mui/icons-material/DarkMode";
+import LightModeIcon from "@mui/icons-material/LightMode";
+import { darkTheme, lightTheme } from "./theme";
 
 export default function App() {
   const [wavesurfer, setWavesurfer] = useState<WaveSurfer>();
   const [isPlaying, setIsPlaying] = useState(false);
   const [fileName, setfileName] = useState("Audio File Name");
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const [mode, setMode] = useState<"light" | "dark">("dark"); // Manage theme mode
+  const theme = useTheme(); // Access the current theme
+
+  const handleThemeToggle = () => {
+    setMode((prevMode) => (prevMode === "light" ? "dark" : "light"));
+  };
 
   const onReady = (ws: WaveSurfer) => {
     setWavesurfer(ws);
@@ -65,295 +73,328 @@ export default function App() {
   };
 
   return (
-    <Box
-      sx={{
-        bgcolor: "#000",
-        color: "#fff",
-        minHeight: "100vh",
-        padding: "15px",
-      }}
-    >
-      {/* Header */}
-      <AppBar
-        position="static"
-        sx={{ bgcolor: "#1B1B1B", mb: "3px", borderRadius: "12px" }}
+    <ThemeProvider theme={mode === "light" ? lightTheme : darkTheme}>
+      <CssBaseline />
+      <Box
+        bgcolor="background.default"
+        sx={{ minHeight: "100vh", padding: "15px" }}
       >
-        <Toolbar>
-          <Typography variant="h5" sx={{ mr: 2 }}>
-            Doctor's Appointment
-          </Typography>
-          <Divider
-            orientation="vertical"
-            flexItem
-            sx={{ padding: "0.75px", my: 1, mx: 1, bgcolor: "#000" }}
-          />
-          <Box sx={{ background: "#353535", borderRadius: 3, marginLeft: 2 }}>
-            <IconButton color="inherit">
-              <Event />
-              <Typography
-                variant="body2"
-                sx={{ marginLeft: 1, color: "#DADADA" }}
-              >
-                16 Aug 2024
-              </Typography>
-            </IconButton>
-          </Box>
-          <Box sx={{ background: "#353535", borderRadius: 3, marginLeft: 1 }}>
-            <IconButton color="inherit">
-              <AccessTime />
-              <Typography
-                variant="body2"
-                sx={{ marginLeft: 1, color: "#DADADA" }}
-              >
-                1 pm - 2 pm
-              </Typography>
-            </IconButton>
-          </Box>
-          <Box sx={{ background: "#353535", borderRadius: 3, marginLeft: 1 }}>
-            <IconButton color="inherit">
-              <Person />
-              <Typography
-                variant="body2"
-                sx={{ marginLeft: 1, color: "#DADADA" }}
-              >
-                Jane Doe
-              </Typography>
-            </IconButton>
-          </Box>
-        </Toolbar>
-      </AppBar>
-
-      <Box display="flex" gap="3px" height="calc(100vh - 64px - 40px)">
-        {/* Left Side: Audio and Transcription */}
-        <Box flex={1} display={"flex"} flexDirection={"column"}>
-          {/* Audio File Section */}
-          <Card
-            sx={{
-              bgcolor: "#1B1B1B",
-              padding: 2,
-              mb: "3px",
-              borderRadius: "12px",
-            }}
-          >
+        {/* Header */}
+        <AppBar
+          position="static"
+          sx={(theme) => ({
+            bgcolor: theme.palette.primary.main,
+            mb: "3px",
+            borderRadius: "12px",
+          })}
+        >
+          <Toolbar>
             <Box
-              display="flex"
-              alignItems="center"
-              justifyContent="space-between"
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
             >
-              <Box display="flex" alignItems="center" gap={2}>
-                <FilePresentRounded sx={{ color: "#DADADA" }} />
-                <Typography
-                  variant="h6"
-                  color="#DADADA"
-                  noWrap
-                  maxWidth={"295px"}
-                >
-                  {fileName}
-                </Typography>
+              <Typography variant="h5" sx={{ mr: 2 }} color="text.primary">
+                Doctor's Appointment
+              </Typography>
+              <Divider
+                orientation="vertical"
+                flexItem
+                sx={(theme) => ({
+                  padding: "0.75px",
+                  my: 1,
+                  mx: 1,
+                  bgcolor: theme.palette.background.default,
+                })}
+              />
+              <Box
+                bgcolor="secondary.main"
+                sx={{
+                  borderRadius: 3,
+                  marginLeft: 2,
+                }}
+              >
+                <IconButton sx={{ color: "text.secondary" }}>
+                  <Event />
+                  <Typography variant="body2" sx={{ marginLeft: 1 }}>
+                    16 Aug 2024
+                  </Typography>
+                </IconButton>
               </Box>
               <Box
-                display="flex"
-                justifyContent="space-between"
-                alignItems="center"
+                bgcolor="secondary.main"
+                sx={{
+                  borderRadius: 3,
+                  marginLeft: 1,
+                }}
               >
+                <IconButton sx={{ color: "text.secondary" }}>
+                  <AccessTime />
+                  <Typography variant="body2" sx={{ marginLeft: 1 }}>
+                    1 pm - 2 pm
+                  </Typography>
+                </IconButton>
+              </Box>
+              <Box
+                bgcolor="secondary.main"
+                sx={{
+                  borderRadius: 3,
+                  marginLeft: 1,
+                }}
+              >
+                <IconButton sx={{ color: "text.secondary" }}>
+                  <Person />
+                  <Typography variant="body2" sx={{ marginLeft: 1 }}>
+                    Jane Doe
+                  </Typography>
+                </IconButton>
+              </Box>
+            </Box>
+            <IconButton onClick={handleThemeToggle} sx={{ marginLeft: "auto" }}>
+              {mode === "light" ? (
+                <DarkModeIcon sx={{ color: "primary.dark" }} />
+              ) : (
+                <LightModeIcon sx={{ color: "primary.light" }} />
+              )}
+            </IconButton>
+          </Toolbar>
+        </AppBar>
+
+        <Box display="flex" gap="3px" height="calc(100vh - 64px - 40px)">
+          {/* Left Side: Audio and Transcription */}
+          <Box flex={1} display={"flex"} flexDirection={"column"}>
+            {/* Audio File Section */}
+            <Card
+              sx={{
+                bgcolor: "primary.main",
+                padding: 2,
+                mb: "3px",
+                borderRadius: "12px",
+              }}
+            >
+              <Box
+                display="flex"
+                alignItems="center"
+                justifyContent="space-between"
+              >
+                <Box
+                  display="flex"
+                  alignItems="center"
+                  gap={2}
+                  color="text.primary"
+                >
+                  <FilePresentRounded />
+                  <Typography variant="h6" noWrap maxWidth={"295px"}>
+                    {fileName}
+                  </Typography>
+                </Box>
+                <Box
+                  display="flex"
+                  justifyContent="space-between"
+                  alignItems="center"
+                >
+                  <Button
+                    startIcon={<Upload />}
+                    onClick={handleClick}
+                    variant="contained"
+                    sx={{
+                      backgroundColor: "secondary.main",
+                      mr: 1,
+                      color: "text.secondary",
+                      borderRadius: 2,
+                    }}
+                  >
+                    Upload
+                    <input
+                      type="file"
+                      accept="audio/*"
+                      ref={inputRef}
+                      onChange={onFileUpload}
+                      style={{ display: "none" }}
+                    />
+                  </Button>
+                  <AudioRecorder
+                    onRecordingComplete={addAudioElement}
+                    audioTrackConstraints={{
+                      noiseSuppression: true,
+                      echoCancellation: true,
+                    }}
+                    onNotAllowedOrFound={(err) => console.table(err)}
+                    mediaRecorderOptions={{
+                      audioBitsPerSecond: 128000,
+                    }}
+                    downloadOnSavePress={true}
+                    downloadFileExtension="wav"
+                    showVisualizer={true}
+                  />
+                </Box>
+              </Box>
+              {/* Placeholder for the waveform visual */}
+              <Wave
+                height={200}
+                waveColor={mode === "light" ? "lightblue" : "white"}
+                url="src/audio/ukfinf_noi_fem_mix_9_full.wav"
+                onReady={onReady}
+                onPlay={() => setIsPlaying(true)}
+                onPause={() => setIsPlaying(false)}
+              />
+              <Box sx={{ display: "flex", justifyContent: "center" }}>
                 <Button
-                  startIcon={<Upload />}
-                  onClick={handleClick}
-                  variant="contained"
+                  onClick={onPlayPause}
                   sx={{
-                    backgroundColor: "#353535",
-                    mr: 1,
-                    color: "#DADADA",
+                    backgroundColor: "text.secondary",
+                    color: "primary.secondary",
                     borderRadius: 2,
                   }}
                 >
-                  Upload
-                  <input
-                    type="file"
-                    accept="audio/*"
-                    ref={inputRef}
-                    onChange={onFileUpload}
-                    style={{ display: "none" }}
-                  />
+                  {isPlaying ? "Pause" : "Play"}
                 </Button>
-                <AudioRecorder
-                  onRecordingComplete={addAudioElement}
-                  audioTrackConstraints={{
-                    noiseSuppression: true,
-                    echoCancellation: true,
-                  }}
-                  onNotAllowedOrFound={(err) => console.table(err)}
-                  mediaRecorderOptions={{
-                    audioBitsPerSecond: 128000,
-                  }}
-                  downloadOnSavePress={true}
-                  downloadFileExtension="wav"
-                  showVisualizer={true}
-                />
               </Box>
-            </Box>
-            {/* Placeholder for the waveform visual */}
-            <Wave
-              height={200}
-              waveColor="white"
-              url="src/audio/ukfinf_noi_fem_mix_9_full.wav"
-              onReady={onReady}
-              onPlay={() => setIsPlaying(true)}
-              onPause={() => setIsPlaying(false)}
-            />
-            <Box sx={{ display: "flex", justifyContent: "center" }}>
-              <Button
-                onClick={onPlayPause}
-                sx={{
-                  backgroundColor: "#fff",
-                  color: "#000",
-                  borderRadius: 2,
-                }}
-              >
-                {isPlaying ? "Pause" : "Play"}
-              </Button>
-            </Box>
-          </Card>
+            </Card>
 
-          {/* Transcription Section */}
+            {/* Transcription Section */}
+            <Card
+              sx={{
+                bgcolor: "primary.main",
+                padding: 2,
+                borderRadius: 3,
+                flex: 1,
+                overflow: "auto",
+              }}
+            >
+              <Box display="flex" alignItems="center" gap={2}>
+                <MessageRounded />
+                <Typography variant="h5">Transcription</Typography>
+              </Box>
+              <Divider
+                flexItem
+                sx={{ padding: "0.25px", my: 2, bgcolor: "primary.dark" }}
+              />
+              {/* List of dialogues */}
+              <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
+                <Person sx={{ mr: 2, color: "text.primary" }} />
+                <Box>
+                  <Typography variant="subtitle1" color="text.primary">
+                    Doctor Joe
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    00:00 - Lorem ipsum dolor sit amet.Lorem ipsum dolor sit
+                    amet.Lorem ipsum dolor sit amet.Lorem ipsum dolor sit
+                    amet.Lorem ipsum dolor sit amet.Lorem ipsum dolor sit amet.
+                  </Typography>
+                </Box>
+              </Box>
+              <Divider
+                flexItem
+                sx={{ padding: "0.2px", my: 2, bgcolor: "background.default" }}
+              />
+              <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
+                <Person sx={{ mr: 2, color: "white" }} />
+                <Box>
+                  <Typography variant="subtitle1" color="#DADADA">
+                    Doctor Joe
+                  </Typography>
+                  <Typography variant="body2" color="#DADADA">
+                    00:00 - Lorem ipsum dolor sit amet.Lorem ipsum dolor sit
+                    amet.Lorem ipsum dolor sit amet.Lorem ipsum dolor sit
+                    amet.Lorem ipsum dolor sit amet.Lorem ipsum dolor sit amet.
+                  </Typography>
+                </Box>
+              </Box>
+              <Divider
+                flexItem
+                sx={{ padding: "0.2px", my: 2, bgcolor: "background.default" }}
+              />
+              <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
+                <Person sx={{ mr: 2, color: "white" }} />
+                <Box>
+                  <Typography variant="subtitle1" color="#DADADA">
+                    Doctor Joe
+                  </Typography>
+                  <Typography variant="body2" color="#DADADA">
+                    00:00 - Lorem ipsum dolor sit amet.Lorem ipsum dolor sit
+                    amet.Lorem ipsum dolor sit amet.Lorem ipsum dolor sit
+                    amet.Lorem ipsum dolor sit amet.Lorem ipsum dolor sit amet.
+                  </Typography>
+                </Box>
+              </Box>
+              <Divider
+                flexItem
+                sx={{ padding: "0.2px", my: 2, bgcolor: "background.default" }}
+              />
+              <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
+                <Person sx={{ mr: 2, color: "white" }} />
+                <Box>
+                  <Typography variant="subtitle1" color="#DADADA">
+                    Doctor Joe
+                  </Typography>
+                  <Typography variant="body2" color="#DADADA">
+                    00:00 - Lorem ipsum dolor sit amet.Lorem ipsum dolor sit
+                    amet.Lorem ipsum dolor sit amet.Lorem ipsum dolor sit
+                    amet.Lorem ipsum dolor sit amet.Lorem ipsum dolor sit amet.
+                  </Typography>
+                </Box>
+              </Box>
+              <Divider
+                flexItem
+                sx={{ padding: "0.2px", my: 2, bgcolor: "background.default" }}
+              />
+              <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
+                <Person sx={{ mr: 2, color: "white" }} />
+                <Box>
+                  <Typography variant="subtitle1" color="#DADADA">
+                    Doctor Joe
+                  </Typography>
+                  <Typography variant="body2" color="#DADADA">
+                    00:00 - Lorem ipsum dolor sit amet.Lorem ipsum dolor sit
+                    amet.Lorem ipsum dolor sit amet.Lorem ipsum dolor sit
+                    amet.Lorem ipsum dolor sit amet.Lorem ipsum dolor sit amet.
+                  </Typography>
+                </Box>
+              </Box>
+              {/* Add more dialogues as necessary */}
+            </Card>
+          </Box>
+          {/* Right Side: Summary Section */}
           <Card
             sx={{
-              bgcolor: "#1B1B1B",
+              bgcolor: "primary.main",
               padding: 2,
               borderRadius: 3,
               flex: 1,
               overflow: "auto",
             }}
           >
-            <Box display="flex" alignItems="center" gap={2}>
-              <MessageRounded sx={{ color: "#DADADA" }} />
-              <Typography variant="h5" color="#DADADA">
-                Transcription
-              </Typography>
+            <Box
+              display="flex"
+              alignItems="center"
+              gap={2}
+              color={"text.secondary"}
+            >
+              <BookRounded />
+              <Typography variant="h5">Summary</Typography>
             </Box>
             <Divider
               flexItem
-              sx={{ padding: "0.25px", my: 2, bgcolor: "#000" }}
+              sx={{ padding: "0.25px", my: 2, bgcolor: "primary.dark" }}
             />
-            {/* List of dialogues */}
-            <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
-              <Person sx={{ mr: 2, color: "white" }} />
-              <Box>
-                <Typography variant="subtitle1" color="#DADADA">
-                  Doctor Joe
-                </Typography>
-                <Typography variant="body2" color="#DADADA">
-                  00:00 - Lorem ipsum dolor sit amet.Lorem ipsum dolor sit
-                  amet.Lorem ipsum dolor sit amet.Lorem ipsum dolor sit
-                  amet.Lorem ipsum dolor sit amet.Lorem ipsum dolor sit amet.
-                </Typography>
-              </Box>
-            </Box>
-            <Divider
-              flexItem
-              sx={{ padding: "0.2px", my: 2, bgcolor: "#000" }}
-            />
-            <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
-              <Person sx={{ mr: 2, color: "white" }} />
-              <Box>
-                <Typography variant="subtitle1" color="#DADADA">
-                  Doctor Joe
-                </Typography>
-                <Typography variant="body2" color="#DADADA">
-                  00:00 - Lorem ipsum dolor sit amet.Lorem ipsum dolor sit
-                  amet.Lorem ipsum dolor sit amet.Lorem ipsum dolor sit
-                  amet.Lorem ipsum dolor sit amet.Lorem ipsum dolor sit amet.
-                </Typography>
-              </Box>
-            </Box>
-            <Divider
-              flexItem
-              sx={{ padding: "0.2px", my: 2, bgcolor: "#000" }}
-            />
-            <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
-              <Person sx={{ mr: 2, color: "white" }} />
-              <Box>
-                <Typography variant="subtitle1" color="#DADADA">
-                  Doctor Joe
-                </Typography>
-                <Typography variant="body2" color="#DADADA">
-                  00:00 - Lorem ipsum dolor sit amet.Lorem ipsum dolor sit
-                  amet.Lorem ipsum dolor sit amet.Lorem ipsum dolor sit
-                  amet.Lorem ipsum dolor sit amet.Lorem ipsum dolor sit amet.
-                </Typography>
-              </Box>
-            </Box>
-            <Divider
-              flexItem
-              sx={{ padding: "0.2px", my: 2, bgcolor: "#000" }}
-            />
-            <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
-              <Person sx={{ mr: 2, color: "white" }} />
-              <Box>
-                <Typography variant="subtitle1" color="#DADADA">
-                  Doctor Joe
-                </Typography>
-                <Typography variant="body2" color="#DADADA">
-                  00:00 - Lorem ipsum dolor sit amet.Lorem ipsum dolor sit
-                  amet.Lorem ipsum dolor sit amet.Lorem ipsum dolor sit
-                  amet.Lorem ipsum dolor sit amet.Lorem ipsum dolor sit amet.
-                </Typography>
-              </Box>
-            </Box>
-            <Divider
-              flexItem
-              sx={{ padding: "0.2px", my: 2, bgcolor: "#000" }}
-            />
-            <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
-              <Person sx={{ mr: 2, color: "white" }} />
-              <Box>
-                <Typography variant="subtitle1" color="#DADADA">
-                  Doctor Joe
-                </Typography>
-                <Typography variant="body2" color="#DADADA">
-                  00:00 - Lorem ipsum dolor sit amet.Lorem ipsum dolor sit
-                  amet.Lorem ipsum dolor sit amet.Lorem ipsum dolor sit
-                  amet.Lorem ipsum dolor sit amet.Lorem ipsum dolor sit amet.
-                </Typography>
-              </Box>
-            </Box>
-            {/* Add more dialogues as necessary */}
+            <Typography
+              color="text.secondary"
+              sx={{
+                whiteSpace: "pre-line",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                wordBreak: "break-word",
+              }}
+            >
+              {mockSummary}
+              {/* Add more summary details */}
+            </Typography>
           </Card>
         </Box>
-        {/* Right Side: Summary Section */}
-        <Card
-          sx={{
-            bgcolor: "#1B1B1B",
-            padding: 2,
-            borderRadius: 3,
-            flex: 1,
-            overflow: "auto",
-          }}
-        >
-          <Box display="flex" alignItems="center" gap={2}>
-            <BookRounded sx={{ color: "#DADADA" }} />
-            <Typography variant="h5" color="#DADADA">
-              Summary
-            </Typography>
-          </Box>
-          <Divider
-            flexItem
-            sx={{ padding: "0.25px", my: 2, bgcolor: "#000" }}
-          />
-          <Typography
-            color="#DADADA"
-            sx={{
-              whiteSpace: "pre-line",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              wordBreak: "break-word",
-            }}
-          >
-            {mockSummary}
-            {/* Add more summary details */}
-          </Typography>
-        </Card>
       </Box>
-    </Box>
+    </ThemeProvider>
   );
 }
