@@ -72,6 +72,22 @@ export default function App() {
     setfileName("New recorded audio");
   };
 
+  const testGetFromServer = async () => {
+    fetch()
+      .then((response) => {
+        if (response.ok) {
+          return response.json(); // Read and parse the JSON body
+        }
+        throw new Error("Network response was not ok.");
+      })
+      .then((data) => {
+        console.log(data.message); // Access the "message" key in the returned JSON
+      })
+      .catch((error) =>
+        console.error("There was a problem with the fetch operation:", error)
+      );
+  };
+
   return (
     <ThemeProvider theme={mode === "light" ? lightTheme : darkTheme}>
       <CssBaseline />
@@ -99,6 +115,7 @@ export default function App() {
               <Typography variant="h5" sx={{ mr: 2 }} color="text.primary">
                 Doctor's Appointment
               </Typography>
+              <IconButton onClick={testGetFromServer}>Temp</IconButton>
               <Divider
                 orientation="vertical"
                 flexItem
