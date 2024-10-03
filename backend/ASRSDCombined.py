@@ -1,11 +1,3 @@
-from SD import SpeakerDiarization
-
-speaker_diarization = SpeakerDiarization.run_sd("multi4_anavaawi_mix_mix_47_full.wav")
-
-from ASR import ASR
-
-asr_transcriptions = ASR.run_asr("multi4_anavaawi_mix_mix_47_full.wav")
-
 output = []
 
 
@@ -62,14 +54,14 @@ def find_speaker(timestamp, diarization_segments, transcription):
     if not splitList:
         return
 
-    ## might have to change the timestamp ->>> TRY
-    ## if there are 2 speakers
-    if len(proportion_id) == 2 and proportion_sum != 1:
-        ## make the maximum one take more proportion
+    ## if only 2 speakers, add remaining to max
+    if len(proportion_id) == 2:
+        prop_sum = sum(tup[-1] for tup in splitList)
         max_tuple = max(splitList, key=lambda x: x[3])
-        min_ratio = min(splitList, key=lambda x: x[3])[3]
         max_tuple_list = list(max_tuple)
-        max_tuple_list[3] = 1 - min_ratio
+        extra_ratio = 1 - proportion_sum
+
+        max_tuple_list[3] += extra_ratio
         updated_max_tuple = tuple(max_tuple_list)
         index = splitList.index(max_tuple)
         splitList[index] = updated_max_tuple
@@ -83,6 +75,7 @@ def find_speaker(timestamp, diarization_segments, transcription):
         splitList.clear()
         splitList.append(updated_max_tuple)
 
+    ## more than 2 speakers, just add it to end
     if len(proportion_id) > 2:
         prop_sum = sum(tup[-1] for tup in splitList)
         extra_ratio = (1 - prop_sum)
@@ -118,8 +111,20 @@ def find_speaker(timestamp, diarization_segments, transcription):
     return
 
 
-# Add speaker info to ASR transcriptions
-for asr in asr_transcriptions:
-    find_speaker(asr['timestamp'], speaker_diarization, asr['text'])
+def generate_transcription(audio_path):
+    print(audio_path)
+    from SD import SpeakerDiarization
 
-print(output)
+    speaker_diarization = SpeakerDiarization.run_sd(audio_path)
+
+    from ASR import ASR
+
+    asr_transcriptions = ASR.run_asr(audio_path)
+
+    # Add speaker info to ASR transcriptions
+    for asr in asr_transcriptions:
+        find_speaker(asr['timestamp'], speaker_diarization, asr['text'])
+
+    return output
+
+
