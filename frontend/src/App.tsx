@@ -35,7 +35,7 @@ export default function App() {
   const [fileName, setfileName] = useState("Audio File Name");
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [mode, setMode] = useState<"light" | "dark">("dark"); // Manage theme mode
-  const theme = useTheme(); // Access the current theme
+  const [audioBlob, setAudioBlob] = useState<Blob>();
 
   const handleThemeToggle = () => {
     setMode((prevMode) => (prevMode === "light" ? "dark" : "light"));
@@ -56,6 +56,7 @@ export default function App() {
       const objectURL = URL.createObjectURL(file);
       wavesurfer.load(objectURL); // Load the uploaded audio file into wavesurfer
       setfileName(file.name);
+      setAudioBlob(file);
     }
   };
 
@@ -70,10 +71,11 @@ export default function App() {
     const url = URL.createObjectURL(blob);
     wavesurfer?.load(url);
     setfileName("New recorded audio");
+    setAudioBlob(blob);
   };
 
   const testGetFromServer = async () => {
-    fetch()
+    fetch("")
       .then((response) => {
         if (response.ok) {
           return response.json(); // Read and parse the JSON body
@@ -86,6 +88,46 @@ export default function App() {
       .catch((error) =>
         console.error("There was a problem with the fetch operation:", error)
       );
+  };
+
+  const getTranscriptions = async (blob: Blob) => {
+    if (!blob) {
+      console.error("No audio blob available for transcription.");
+      return;
+    }
+
+    // Create a new FormData object
+    const formData = new FormData();
+    formData.append("file", blob, fileName); // Append the blob with the filename
+
+    try {
+      const response = await fetch(
+        "",
+        {
+          method: "POST",
+          body: formData, // Send FormData instead of raw Blob
+          // No need to manually set Content-Type; fetch will automatically add proper multipart headers
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Network response was not ok.");
+      }
+
+      const data = await response.json(); // Parse the JSON response
+      console.log(data.message); // Access the "message" key in the returned JSON
+    } catch (error) {
+      console.error("There was a problem with the fetch operation:", error);
+    }
+  };
+
+  const handleSD = async () => {
+    if (audioBlob) {
+      console.log("start SD");
+      console.log(audioBlob.type);
+
+      await getTranscriptions(audioBlob);
+    }
   };
 
   return (
@@ -115,7 +157,6 @@ export default function App() {
               <Typography variant="h5" sx={{ mr: 2 }} color="text.primary">
                 Doctor's Appointment
               </Typography>
-              <IconButton onClick={testGetFromServer}>Temp</IconButton>
               <Divider
                 orientation="vertical"
                 flexItem
@@ -257,7 +298,7 @@ export default function App() {
                 onPlay={() => setIsPlaying(true)}
                 onPause={() => setIsPlaying(false)}
               />
-              <Box sx={{ display: "flex", justifyContent: "center" }}>
+              <Box sx={{ display: "flex", justifyContent: "space-evenly" }}>
                 <Button
                   onClick={onPlayPause}
                   sx={{
@@ -267,6 +308,16 @@ export default function App() {
                   }}
                 >
                   {isPlaying ? "Pause" : "Play"}
+                </Button>
+                <Button
+                  onClick={handleSD}
+                  sx={{
+                    backgroundColor: "text.secondary",
+                    color: "primary.secondary",
+                    borderRadius: 2,
+                  }}
+                >
+                  SPEAKER DIARIZATION!
                 </Button>
               </Box>
             </Card>
