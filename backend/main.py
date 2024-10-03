@@ -19,12 +19,12 @@ def create_transcription():
     try:
         # Get the uploaded audio file
         if 'audio' not in request.files:
-            return jsonify({"error": "No audio file provided"}), 400
+            return jsonify({"message": "No audio file provided"}), 400
 
         audio_file = request.files['audio']
 
         if audio_file.filename == '':
-            return jsonify({"error": "No selected file"}), 400
+            return jsonify({"message": "No selected file"}), 400
 
         # Save the uploaded audio file
         audio_filename = "audio.wav"
@@ -32,12 +32,12 @@ def create_transcription():
 
         # Generate transcription output with speaker info
         transcript = generate_transcription(audio_filename)
-        # summary = summarise_transcript(transcript)
+        summary = summarise_transcript(transcript)
 
         # Remove the temporary audio file
         os.remove(audio_filename)
 
-        return jsonify({"transcriptions": transcript, "summary": "SUMMRY PENDING"}), 201
+        return jsonify({"transcriptions": transcript, "summary": summary}), 201
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
