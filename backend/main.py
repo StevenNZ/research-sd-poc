@@ -2,8 +2,8 @@ import os
 
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-
-from backend.ASRSDCombined import generate_transcription
+from ASRSDCombined import generate_transcription
+from TranscriptionSummarise import summarise_transcript
 
 app = Flask(__name__)
 CORS(app)
@@ -31,12 +31,13 @@ def create_transcription():
         audio_file.save(audio_filename)
 
         # Generate transcription output with speaker info
-        output = generate_transcription(audio_filename)
+        transcript = generate_transcription(audio_filename)
+        # summary = summarise_transcript(transcript)
 
         # Remove the temporary audio file
         os.remove(audio_filename)
 
-        return jsonify(output), 201
+        return jsonify({"transcriptions": transcript, "summary": "SUMMRY PENDING"}), 201
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
