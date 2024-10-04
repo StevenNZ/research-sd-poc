@@ -24,10 +24,10 @@ import WaveSurfer from "wavesurfer.js";
 import Wave from "./wave";
 import { AudioRecorder } from "react-audio-voice-recorder";
 import "./App.css";
-import { mockSummary } from "./mock";
 import DarkModeIcon from "@mui/icons-material/DarkMode";
 import LightModeIcon from "@mui/icons-material/LightMode";
 import { darkTheme, lightTheme } from "./theme";
+import LoadingSpinnerScreen from "./LoadingSpinnerScreen";
 
 export default function App() {
   const [wavesurfer, setWavesurfer] = useState<WaveSurfer>();
@@ -36,6 +36,8 @@ export default function App() {
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [mode, setMode] = useState<"light" | "dark">("dark"); // Manage theme mode
   const [audioBlob, setAudioBlob] = useState<Blob>();
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isError, setIsError] = useState<boolean>(false);
 
   const handleThemeToggle = () => {
     setMode((prevMode) => (prevMode === "light" ? "dark" : "light"));
@@ -102,7 +104,7 @@ export default function App() {
 
     try {
       const response = await fetch(
-        "",
+        "http://10.104.143.81:5000/create-transcription",
         {
           method: "POST",
           body: formData, // Send FormData instead of raw Blob
@@ -129,6 +131,16 @@ export default function App() {
       await getTranscriptions(audioBlob);
     }
   };
+
+  const summary = `Overall Summary of Conversation:
+During the consultation, Dr. Ahmed addressed the concerns of a patient regarding her mother's significant weight loss, persistent abdominal pain, nocturnal diarrhea, and recent jaundice. Dr. Ahmed suggested that these symptoms could indicate several conditions, including cholestasis or pancreatic issues. He recommended conducting an abdominal ultrasound, liver function tests, and checking the C-A19-9 tumor marker to rule out pancreatic cancer or biliary diseases. Additionally, he mentioned the possibility of an MRCP (Magnetic Resonance Cholangiopancreatography) for a detailed view of the bile ducts and pancreas if necessary. The family expressed their willingness to proceed with the tests.
+
+Action Items:
+1. Schedule an abdominal ultrasound.
+2. Conduct liver function tests, including albumin and bilirubin levels.
+3. Check C-A19-9 levels.
+4. Consider an MRCP if initial tests indicate further investigation is needed.
+5. Monitor the patient's symptoms, particularly abdominal pain after meals and any changes in jaundice or pruritus.`;
 
   return (
     <ThemeProvider theme={mode === "light" ? lightTheme : darkTheme}>
@@ -341,88 +353,87 @@ export default function App() {
                 sx={{ padding: "0.25px", my: 2, bgcolor: "primary.dark" }}
               />
               {/* List of dialogues */}
-              <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
-                <Person sx={{ mr: 2, color: "text.primary" }} />
+              {isLoading ? (
+                <LoadingSpinnerScreen />
+              ) : isError ? (
+                <div>Error during speaker diarization process</div>
+              ) : (
                 <Box>
-                  <Typography variant="subtitle1" color="text.primary">
-                    Doctor Joe
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    00:00 - Lorem ipsum dolor sit amet.Lorem ipsum dolor sit
-                    amet.Lorem ipsum dolor sit amet.Lorem ipsum dolor sit
-                    amet.Lorem ipsum dolor sit amet.Lorem ipsum dolor sit amet.
-                  </Typography>
+                  <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
+                    <Person sx={{ mr: 2, color: "text.primary" }} />
+                    <Box>
+                      <Typography variant="subtitle1" color="text.primary">
+                        Doctor Joe
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        00:00 - Lorem ipsum dolor sit amet.Lorem ipsum dolor sit
+                        amet.Lorem ipsum dolor sit amet.Lorem ipsum dolor sit
+                        amet.Lorem ipsum dolor sit amet.Lorem ipsum dolor sit
+                        amet.
+                      </Typography>
+                    </Box>
+                  </Box>
+                  <Divider
+                    flexItem
+                    sx={{ padding: "0.2px", my: 2, bgcolor: "primary.dark" }}
+                  />
+                  <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
+                    <Person sx={{ mr: 2, color: "text.primary" }} />
+                    <Box>
+                      <Typography variant="subtitle1" color="text.primary">
+                        Doctor Joe
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        00:00 - Lorem ipsum dolor sit amet.Lorem ipsum dolor sit
+                        amet.Lorem ipsum dolor sit amet.Lorem ipsum dolor sit
+                        amet.Lorem ipsum dolor sit amet.Lorem ipsum dolor sit
+                        amet.
+                      </Typography>
+                    </Box>
+                  </Box>
+                  <Divider
+                    flexItem
+                    sx={{ padding: "0.2px", my: 2, bgcolor: "primary.dark" }}
+                  />
+                  <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
+                    <Person sx={{ mr: 2, color: "text.primary" }} />
+                    <Box>
+                      <Typography variant="subtitle1" color="text.primary">
+                        Doctor Joe
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        00:00 - Lorem ipsum dolor sit amet.Lorem ipsum dolor sit
+                        amet.Lorem ipsum dolor sit amet.Lorem ipsum dolor sit
+                        amet.Lorem ipsum dolor sit amet.Lorem ipsum dolor sit
+                        amet.
+                      </Typography>
+                    </Box>
+                  </Box>
+                  <Divider
+                    flexItem
+                    sx={{ padding: "0.2px", my: 2, bgcolor: "primary.dark" }}
+                  />
+                  <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
+                    <Person sx={{ mr: 2, color: "text.primary" }} />
+                    <Box>
+                      <Typography variant="subtitle1" color="text.primary">
+                        Doctor Joe
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        00:00 - Lorem ipsum dolor sit amet.Lorem ipsum dolor sit
+                        amet.Lorem ipsum dolor sit amet.Lorem ipsum dolor sit
+                        amet.Lorem ipsum dolor sit amet.Lorem ipsum dolor sit
+                        amet.
+                      </Typography>
+                    </Box>
+                  </Box>
+                  <Divider
+                    flexItem
+                    sx={{ padding: "0.2px", my: 2, bgcolor: "primary.dark" }}
+                  />
+                  {/* Add more dialogues as necessary */}
                 </Box>
-              </Box>
-              <Divider
-                flexItem
-                sx={{ padding: "0.2px", my: 2, bgcolor: "background.default" }}
-              />
-              <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
-                <Person sx={{ mr: 2, color: "white" }} />
-                <Box>
-                  <Typography variant="subtitle1" color="#DADADA">
-                    Doctor Joe
-                  </Typography>
-                  <Typography variant="body2" color="#DADADA">
-                    00:00 - Lorem ipsum dolor sit amet.Lorem ipsum dolor sit
-                    amet.Lorem ipsum dolor sit amet.Lorem ipsum dolor sit
-                    amet.Lorem ipsum dolor sit amet.Lorem ipsum dolor sit amet.
-                  </Typography>
-                </Box>
-              </Box>
-              <Divider
-                flexItem
-                sx={{ padding: "0.2px", my: 2, bgcolor: "background.default" }}
-              />
-              <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
-                <Person sx={{ mr: 2, color: "white" }} />
-                <Box>
-                  <Typography variant="subtitle1" color="#DADADA">
-                    Doctor Joe
-                  </Typography>
-                  <Typography variant="body2" color="#DADADA">
-                    00:00 - Lorem ipsum dolor sit amet.Lorem ipsum dolor sit
-                    amet.Lorem ipsum dolor sit amet.Lorem ipsum dolor sit
-                    amet.Lorem ipsum dolor sit amet.Lorem ipsum dolor sit amet.
-                  </Typography>
-                </Box>
-              </Box>
-              <Divider
-                flexItem
-                sx={{ padding: "0.2px", my: 2, bgcolor: "background.default" }}
-              />
-              <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
-                <Person sx={{ mr: 2, color: "white" }} />
-                <Box>
-                  <Typography variant="subtitle1" color="#DADADA">
-                    Doctor Joe
-                  </Typography>
-                  <Typography variant="body2" color="#DADADA">
-                    00:00 - Lorem ipsum dolor sit amet.Lorem ipsum dolor sit
-                    amet.Lorem ipsum dolor sit amet.Lorem ipsum dolor sit
-                    amet.Lorem ipsum dolor sit amet.Lorem ipsum dolor sit amet.
-                  </Typography>
-                </Box>
-              </Box>
-              <Divider
-                flexItem
-                sx={{ padding: "0.2px", my: 2, bgcolor: "background.default" }}
-              />
-              <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
-                <Person sx={{ mr: 2, color: "white" }} />
-                <Box>
-                  <Typography variant="subtitle1" color="#DADADA">
-                    Doctor Joe
-                  </Typography>
-                  <Typography variant="body2" color="#DADADA">
-                    00:00 - Lorem ipsum dolor sit amet.Lorem ipsum dolor sit
-                    amet.Lorem ipsum dolor sit amet.Lorem ipsum dolor sit
-                    amet.Lorem ipsum dolor sit amet.Lorem ipsum dolor sit amet.
-                  </Typography>
-                </Box>
-              </Box>
-              {/* Add more dialogues as necessary */}
+              )}
             </Card>
           </Box>
           {/* Right Side: Summary Section */}
@@ -457,7 +468,13 @@ export default function App() {
                 wordBreak: "break-word",
               }}
             >
-              {mockSummary}
+              {isLoading ? (
+                <LoadingSpinnerScreen />
+              ) : isError ? (
+                <div>Error during speaker diarization process</div>
+              ) : (
+                summary
+              )}
               {/* Add more summary details */}
             </Typography>
           </Card>
