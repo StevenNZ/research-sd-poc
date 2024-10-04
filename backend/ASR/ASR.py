@@ -5,15 +5,14 @@ from transformers import AutoModelForSpeechSeq2Seq, AutoProcessor, pipeline
 import inflect
 import re
 
-
 whisper_small_ft = "ashe194/700-fine-tuned-whisper-small-full"
 audio_path = "moltin_noi_fem_mix_28_full.wav"
 
-wer_metric = evaluate.load("wer")
-cer_metric = evaluate.load("cer")
+# wer_metric = evaluate.load("wer")
+# cer_metric = evaluate.load("cer")
 
 model = AutoModelForSpeechSeq2Seq.from_pretrained(
-    whisper_small_ft, low_cpu_mem_usage=True, use_safetensors=True
+    whisper_small_ft, use_safetensors=True
 )
 
 processor = AutoProcessor.from_pretrained(whisper_small_ft)
@@ -28,6 +27,7 @@ pipe = pipeline(
     chunk_length_s=30,
     tokenizer=processor.tokenizer,
     feature_extractor=processor.feature_extractor,
+    device='cpu'
 )
 
 
@@ -60,8 +60,9 @@ def flatten_dialogue(json_data):
 
 
 def run_asr(audio_path):
-    prediction_with_text = pipe(audio_path, batch_size=8, return_timestamps=True, generate_kwargs={"language": "english"})[
-        'chunks']
+    prediction_with_text = \
+        pipe(audio_path, batch_size=8, return_timestamps=True, generate_kwargs={"language": "english"})[
+            'chunks']
     return prediction_with_text
 
 # Evaluation Stuff

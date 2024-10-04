@@ -101,8 +101,8 @@ export default function App() {
     formData.append("file", blob, fileName); // Append the blob with the filename
 
     try {
-      const response = await fetch(
-        "",
+      const uploadAudioResponse = await fetch(
+        "http://10.104.143.81:5000/upload-audio",
         {
           method: "POST",
           body: formData, // Send FormData instead of raw Blob
@@ -110,12 +110,66 @@ export default function App() {
         }
       );
 
-      if (!response.ok) {
+      if (!uploadAudioResponse.ok) {
         throw new Error("Network response was not ok.");
       }
 
-      const data = await response.json(); // Parse the JSON response
-      console.log(data.message); // Access the "message" key in the returned JSON
+      const audio_file_path = await uploadAudioResponse.json();
+      console.log(audio_file_path["file_path"]);
+
+      const asr_sd_response = await fetch(
+        "http://10.104.143.81:5000/create-asr-sd",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ audio_file_path: audio_file_path }), // Send as JSON
+        }
+      );
+
+      if (asr_sd_response.status !== 200) {
+        throw new Error("Network response was not ok.");
+      }
+
+      const asr_sd = await asr_sd_response.json();
+      console.log(asr_sd);
+
+      const transcription_response = await fetch(
+        "http://10.104.143.81:5000/create-transcription",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ asr_sd }), // Send as JSON
+        }
+      );
+
+      if (transcription_response.status !== 200) {
+        throw new Error("Network response was not ok.");
+      }
+
+      const transcription = await transcription_response.json();
+      console.log(transcription);
+
+      const summary_response = await fetch(
+        "http://10.104.143.81:5000/create-summary",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ transcription }), // Send as JSON
+        }
+      );
+
+      if (summary_response.status !== 200) {
+        throw new Error("Network response was not ok.");
+      }
+
+      const summary = await summary_response.json();
+      console.log(summary);
     } catch (error) {
       console.error("There was a problem with the fetch operation:", error);
     }
