@@ -9,7 +9,7 @@ const LoadingSpinnerScreen: React.FC = () => {
       alignItems="center"
       margin="auto"
     >
-      <CircularProgress color="primary" size={100} />
+      <CircularProgress color="info" size={100} />
     </Box>
   );
 };

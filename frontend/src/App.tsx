@@ -28,6 +28,15 @@ import DarkModeIcon from "@mui/icons-material/DarkMode";
 import LightModeIcon from "@mui/icons-material/LightMode";
 import { darkTheme, lightTheme } from "./theme";
 import LoadingSpinnerScreen from "./LoadingSpinnerScreen";
+import { WaveFile } from "wavefile";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+
+type Transcriptions = {
+  speaker: string;
+  timestamp: [number, number];
+  transcription: string;
+};
 
 export default function App() {
   const [wavesurfer, setWavesurfer] = useState<WaveSurfer>();
@@ -36,8 +45,16 @@ export default function App() {
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [mode, setMode] = useState<"light" | "dark">("dark"); // Manage theme mode
   const [audioBlob, setAudioBlob] = useState<Blob>();
-  const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [isError, setIsError] = useState<boolean>(false);
+  const [transcriptions, setTranscriptions] = useState<Transcriptions[] | null>(
+    null
+  );
+  const [summary, setSummary] = useState<string>(
+    "Upload or record an audio :)"
+  );
+  const [isTLoading, setIsTLoading] = useState<boolean>(false);
+  const [isTError, setIsTError] = useState<boolean>(false);
+  const [isSLoading, setIsSLoading] = useState<boolean>(false);
+  const [isSError, setIsSError] = useState<boolean>(false);
 
   const handleThemeToggle = () => {
     setMode((prevMode) => (prevMode === "light" ? "dark" : "light"));
@@ -69,11 +86,34 @@ export default function App() {
     }
   };
 
+  const convertBlobToWav = async (blob: Blob) => {
+    const audioContext = new AudioContext();
+
+    // Decode the MP4 blob into raw audio data
+    const arrayBuffer = await blob.arrayBuffer();
+    const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+
+    // Extract audio channel data
+    const channelData = audioBuffer.getChannelData(0); // Use the first audio channel
+
+    // Step 3: Create a new WaveFile instance and configure it with the audio data
+    const wav = new WaveFile();
+
+    // Create the WAV file from the audio buffer's channel data
+    wav.fromScratch(1, audioBuffer.sampleRate, "32f", channelData);
+
+    // Convert to WAV format and create a Blob
+    const wavBlob = new Blob([wav.toBuffer()], { type: "audio/wav" });
+
+    return wavBlob;
+  };
+
   const addAudioElement = async (blob: Blob) => {
     const url = URL.createObjectURL(blob);
     wavesurfer?.load(url);
-    setfileName("New recorded audio");
-    setAudioBlob(blob);
+    const wavBlob = await convertBlobToWav(blob); // Convert MP4 to WAV
+    setfileName("New_recorded_audio");
+    setAudioBlob(wavBlob);
   };
 
   const testGetFromServer = async () => {
@@ -102,6 +142,8 @@ export default function App() {
     const formData = new FormData();
     formData.append("file", blob, fileName); // Append the blob with the filename
 
+    setIsSLoading(true);
+    setIsTLoading(true);
     try {
       const uploadAudioResponse = await fetch(
         "http://10.104.143.81:5000/upload-audio",
@@ -153,52 +195,78 @@ export default function App() {
       }
 
       const transcription = await transcription_response.json();
+      setTranscriptions(transcription);
+      setIsTLoading(false);
+      setIsTError(false);
       console.log(transcription);
 
-      const summary_response = await fetch(
-        "http://10.104.143.81:5000/create-summary",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ transcription }), // Send as JSON
+      try {
+        const summary_response = await fetch(
+          "http://10.104.143.81:5000/create-summary",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ transcription }), // Send as JSON
+          }
+        );
+
+        if (summary_response.status !== 200) {
+          throw new Error("Network response was not ok.");
         }
-      );
 
-      if (summary_response.status !== 200) {
-        throw new Error("Network response was not ok.");
+        const summary = await summary_response.json();
+        setSummary(summary);
+        setIsSLoading(false);
+        setIsSError(false);
+        console.log(summary);
+      } catch (error) {
+        setIsSLoading(false);
+        setIsSError(true);
+        console.error(
+          "There was a problem with the fetch operation for summary:",
+          error
+        );
       }
-
-      const summary = await summary_response.json();
-      console.log(summary);
     } catch (error) {
-      console.error("There was a problem with the fetch operation:", error);
+      setIsTLoading(false);
+      setIsSLoading(false);
+      setIsTError(true);
+      console.error(
+        "There was a problem with the fetch operation for asr/sd:",
+        error
+      );
     }
   };
 
   const handleSD = async () => {
-    if (audioBlob) {
-      console.log("start SD");
-      console.log(audioBlob.type);
-
+    if (!wavesurfer) {
+      toast("Please upload audio file or record an audio conversation");
+    } else if (wavesurfer.getDuration() < 30) {
+      toast("Please ensure audio is more than 30 seconds long");
+    } else if (audioBlob) {
+      toast("Starting speaker diarization process, please wait :)");
       await getTranscriptions(audioBlob);
+    } else {
+      toast(
+        "Current audio is a placeholder, please upload an audio file or record an audio conversation"
+      );
     }
   };
 
-  const summary = `Overall Summary of Conversation:
-During the consultation, Dr. Ahmed addressed the concerns of a patient regarding her mother's significant weight loss, persistent abdominal pain, nocturnal diarrhea, and recent jaundice. Dr. Ahmed suggested that these symptoms could indicate several conditions, including cholestasis or pancreatic issues. He recommended conducting an abdominal ultrasound, liver function tests, and checking the C-A19-9 tumor marker to rule out pancreatic cancer or biliary diseases. Additionally, he mentioned the possibility of an MRCP (Magnetic Resonance Cholangiopancreatography) for a detailed view of the bile ducts and pancreas if necessary. The family expressed their willingness to proceed with the tests.
-
-Action Items:
-1. Schedule an abdominal ultrasound.
-2. Conduct liver function tests, including albumin and bilirubin levels.
-3. Check C-A19-9 levels.
-4. Consider an MRCP if initial tests indicate further investigation is needed.
-5. Monitor the patient's symptoms, particularly abdominal pain after meals and any changes in jaundice or pruritus.`;
+  const formatTimestamp = (timestamp: number): string => {
+    const minutes = Math.floor(timestamp / 60); // Get whole minutes
+    const seconds = Math.floor(timestamp % 60); // Get remaining seconds
+    const formattedMinutes = String(minutes).padStart(2, "0"); // Pad minutes
+    const formattedSeconds = String(seconds).padStart(2, "0"); // Pad seconds
+    return `${formattedMinutes}:${formattedSeconds}`;
+  };
 
   return (
     <ThemeProvider theme={mode === "light" ? lightTheme : darkTheme}>
       <CssBaseline />
+      <ToastContainer />
       <Box
         bgcolor="background.default"
         sx={{ minHeight: "100vh", padding: "15px" }}
@@ -358,7 +426,7 @@ Action Items:
               {/* Placeholder for the waveform visual */}
               <Wave
                 height={200}
-                waveColor={mode === "light" ? "lightblue" : "white"}
+                waveColor={"lightblue"}
                 url="src/audio/ukfinf_noi_fem_mix_9_full.wav"
                 onReady={onReady}
                 onPlay={() => setIsPlaying(true)}
@@ -407,86 +475,35 @@ Action Items:
                 sx={{ padding: "0.25px", my: 2, bgcolor: "primary.dark" }}
               />
               {/* List of dialogues */}
-              {isLoading ? (
+              {isTLoading ? (
                 <LoadingSpinnerScreen />
-              ) : isError ? (
-                <div>Error during speaker diarization process</div>
+              ) : isTError ? (
+                <Typography color="error">
+                  Error during speaker diarization process
+                </Typography>
               ) : (
-                <Box>
-                  <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
-                    <Person sx={{ mr: 2, color: "text.primary" }} />
-                    <Box>
-                      <Typography variant="subtitle1" color="text.primary">
-                        Doctor Joe
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        00:00 - Lorem ipsum dolor sit amet.Lorem ipsum dolor sit
-                        amet.Lorem ipsum dolor sit amet.Lorem ipsum dolor sit
-                        amet.Lorem ipsum dolor sit amet.Lorem ipsum dolor sit
-                        amet.
-                      </Typography>
+                transcriptions &&
+                transcriptions.map((transcription, index) => (
+                  <Box key={index}>
+                    <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
+                      <Person sx={{ mr: 2, color: "text.primary" }} />
+                      <Box>
+                        <Typography variant="subtitle1" color="text.primary">
+                          {transcription.speaker}
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          {formatTimestamp(transcription.timestamp[0])} -{" "}
+                          {formatTimestamp(transcription.timestamp[1])} -{" "}
+                          {transcription.transcription}
+                        </Typography>
+                      </Box>
                     </Box>
+                    <Divider
+                      flexItem
+                      sx={{ padding: "0.2px", my: 2, bgcolor: "primary.dark" }}
+                    />
                   </Box>
-                  <Divider
-                    flexItem
-                    sx={{ padding: "0.2px", my: 2, bgcolor: "primary.dark" }}
-                  />
-                  <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
-                    <Person sx={{ mr: 2, color: "text.primary" }} />
-                    <Box>
-                      <Typography variant="subtitle1" color="text.primary">
-                        Doctor Joe
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        00:00 - Lorem ipsum dolor sit amet.Lorem ipsum dolor sit
-                        amet.Lorem ipsum dolor sit amet.Lorem ipsum dolor sit
-                        amet.Lorem ipsum dolor sit amet.Lorem ipsum dolor sit
-                        amet.
-                      </Typography>
-                    </Box>
-                  </Box>
-                  <Divider
-                    flexItem
-                    sx={{ padding: "0.2px", my: 2, bgcolor: "primary.dark" }}
-                  />
-                  <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
-                    <Person sx={{ mr: 2, color: "text.primary" }} />
-                    <Box>
-                      <Typography variant="subtitle1" color="text.primary">
-                        Doctor Joe
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        00:00 - Lorem ipsum dolor sit amet.Lorem ipsum dolor sit
-                        amet.Lorem ipsum dolor sit amet.Lorem ipsum dolor sit
-                        amet.Lorem ipsum dolor sit amet.Lorem ipsum dolor sit
-                        amet.
-                      </Typography>
-                    </Box>
-                  </Box>
-                  <Divider
-                    flexItem
-                    sx={{ padding: "0.2px", my: 2, bgcolor: "primary.dark" }}
-                  />
-                  <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
-                    <Person sx={{ mr: 2, color: "text.primary" }} />
-                    <Box>
-                      <Typography variant="subtitle1" color="text.primary">
-                        Doctor Joe
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        00:00 - Lorem ipsum dolor sit amet.Lorem ipsum dolor sit
-                        amet.Lorem ipsum dolor sit amet.Lorem ipsum dolor sit
-                        amet.Lorem ipsum dolor sit amet.Lorem ipsum dolor sit
-                        amet.
-                      </Typography>
-                    </Box>
-                  </Box>
-                  <Divider
-                    flexItem
-                    sx={{ padding: "0.2px", my: 2, bgcolor: "primary.dark" }}
-                  />
-                  {/* Add more dialogues as necessary */}
-                </Box>
+                ))
               )}
             </Card>
           </Box>
@@ -513,24 +530,26 @@ Action Items:
               flexItem
               sx={{ padding: "0.25px", my: 2, bgcolor: "primary.dark" }}
             />
-            <Typography
-              color="text.secondary"
-              sx={{
-                whiteSpace: "pre-line",
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                wordBreak: "break-word",
-              }}
-            >
-              {isLoading ? (
-                <LoadingSpinnerScreen />
-              ) : isError ? (
-                <div>Error during speaker diarization process</div>
-              ) : (
-                summary
-              )}
-              {/* Add more summary details */}
-            </Typography>
+
+            {isSLoading ? (
+              <LoadingSpinnerScreen />
+            ) : isSError ? (
+              <Typography color="error">
+                Error during summary process
+              </Typography>
+            ) : (
+              <Typography
+                color="text.secondary"
+                sx={{
+                  whiteSpace: "pre-line",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  wordBreak: "break-word",
+                }}
+              >
+                {summary}
+              </Typography>
+            )}
           </Card>
         </Box>
       </Box>
