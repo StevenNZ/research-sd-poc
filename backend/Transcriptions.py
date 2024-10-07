@@ -2,9 +2,13 @@ output = []
 
 
 # Function to find speaker for a given timestamp range
-def find_speaker(timestamp, diarization_segments, transcription):
+def find_speaker(timestamp, diarization_segments, transcription, recording_duration):
     temp = {}
     start, end = timestamp
+
+
+    if end is None:
+        end = recording_duration
     total_duration = end - start
     speakers = []
     speaker_ids = []
@@ -111,8 +115,8 @@ def find_speaker(timestamp, diarization_segments, transcription):
     return
 
 
-def generate_transcription(asr_transcriptions, speaker_diarization):
+def generate_transcription(asr_transcriptions, speaker_diarization, recording_duration):
     for asr in asr_transcriptions:
-        find_speaker(asr['timestamp'], speaker_diarization, asr['text'])
+        find_speaker(asr['timestamp'], speaker_diarization, asr['text'], recording_duration)
 
     return output
