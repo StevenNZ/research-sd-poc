@@ -17,6 +17,8 @@
     "react": "latest",
     "react-audio-voice-recorder": "^2.2.0",
     "react-dom": "latest",
+    "react-toastify": "^10.0.5",
+    "wavefile": "^11.0.0",
     "wavesurfer.js": "^7.8.6"
   },
   "devDependencies": {
