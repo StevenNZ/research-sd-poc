@@ -22,6 +22,7 @@ import {
 } from "@mui/icons-material";
 import WaveSurfer from "wavesurfer.js";
 import TimelinePlugin from "wavesurfer.js/dist/plugins/timeline";
+import Hover from "wavesurfer.js/dist/plugins/hover";
 import Wave from "./wave";
 import { AudioRecorder } from "react-audio-voice-recorder";
 import "./App.css";
@@ -71,6 +72,12 @@ export default function App() {
       TimelinePlugin.create({
         primaryLabelInterval: 0,
         secondaryLabelInterval: 1,
+      })
+    );
+    wavesurfer?.registerPlugin(
+      Hover.create({
+        lineWidth: 1,
+        labelSize: "14px",
       })
     );
   }, [wavesurfer]);
