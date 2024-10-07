@@ -14,6 +14,7 @@ CORS(app)
 def home():
     return jsonify(message="Home"), 200
 
+
 @app.route("/create-summary", methods=["POST"])
 def create_summary():
     data = request.get_json()
@@ -26,7 +27,6 @@ def create_summary():
     return jsonify(summary), 200
 
 
-
 @app.route("/create-transcription", methods=["POST"])
 def create_transcription():
     data = request.get_json()
@@ -36,8 +36,9 @@ def create_transcription():
 
     asr_transcriptions = data['asr_sd']['asr']
     sd_transcriptions = data['asr_sd']['sd']
+    duration = data['duration']
 
-    transcription = generate_transcription(asr_transcriptions, sd_transcriptions)
+    transcription = generate_transcription(asr_transcriptions, sd_transcriptions, duration)
 
     return jsonify(transcription), 200
 
@@ -82,7 +83,6 @@ def upload_audio():
 
         audio_file_path = f'ASR-SD_{audio_file.filename}'
         audio_file.save(audio_file_path)
-
 
         return jsonify({"file_path": audio_file_path}), 201
 
