@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ThemeProvider } from "@mui/material/styles";
 import { CssBaseline, useTheme } from "@mui/material";
 import Typography from "@mui/material/Typography";
@@ -21,6 +21,7 @@ import {
   Upload,
 } from "@mui/icons-material";
 import WaveSurfer from "wavesurfer.js";
+import TimelinePlugin from "wavesurfer.js/dist/plugins/timeline";
 import Wave from "./wave";
 import { AudioRecorder } from "react-audio-voice-recorder";
 import "./App.css";
@@ -64,6 +65,10 @@ export default function App() {
     setWavesurfer(ws);
     setIsPlaying(false);
   };
+
+  useEffect(() => {
+    wavesurfer?.registerPlugin(TimelinePlugin.create({primaryLabelInterval:0, secondaryLabelInterval:1}));
+  }, [wavesurfer]);
 
   const onPlayPause = () => {
     wavesurfer && wavesurfer.playPause();
@@ -168,7 +173,9 @@ export default function App() {
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ audio_file_path: audio_file_path }), // Send as JSON
+          body: JSON.stringify({
+            audio_file_path: audio_file_path,
+          }), // Send as JSON
         }
       );
 
@@ -186,7 +193,7 @@ export default function App() {
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ asr_sd }), // Send as JSON
+          body: JSON.stringify({ asr_sd, duration: wavesurfer?.getDuration() }), // Send as JSON
         }
       );
 
@@ -432,7 +439,7 @@ export default function App() {
                 onPlay={() => setIsPlaying(true)}
                 onPause={() => setIsPlaying(false)}
               />
-              <Box sx={{ display: "flex", justifyContent: "space-evenly" }}>
+              <Box sx={{ display: "flex", justifyContent: "space-evenly", marginTop:3}}>
                 <Button
                   onClick={onPlayPause}
                   sx={{
