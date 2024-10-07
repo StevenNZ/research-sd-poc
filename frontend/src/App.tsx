@@ -252,6 +252,8 @@ export default function App() {
       toast("Please upload audio file or record an audio conversation");
     } else if (wavesurfer.getDuration() < 30) {
       toast("Please ensure audio is more than 30 seconds long");
+    } else if (wavesurfer.getDuration() > 360) {
+      toast("Please ensure audio is less than 6 minutes long");
     } else if (audioBlob) {
       toast("Starting speaker diarization process, please wait :)");
       await getTranscriptions(audioBlob);
