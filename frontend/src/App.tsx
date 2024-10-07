@@ -67,20 +67,30 @@ export default function App() {
   };
 
   useEffect(() => {
-    wavesurfer?.registerPlugin(TimelinePlugin.create({primaryLabelInterval:0, secondaryLabelInterval:1}));
+    wavesurfer?.registerPlugin(
+      TimelinePlugin.create({
+        primaryLabelInterval: 0,
+        secondaryLabelInterval: 1,
+      })
+    );
   }, [wavesurfer]);
 
   const onPlayPause = () => {
     wavesurfer && wavesurfer.playPause();
   };
 
-  const onFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const onFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file && wavesurfer) {
       const objectURL = URL.createObjectURL(file);
       wavesurfer.load(objectURL); // Load the uploaded audio file into wavesurfer
       setfileName(file.name);
-      setAudioBlob(file);
+
+      if (!file.type.includes("wav")) {
+        setAudioBlob(await convertBlobToWav(file));
+      } else {
+        setAudioBlob(file);
+      }
     }
   };
 
@@ -255,6 +265,7 @@ export default function App() {
     } else if (wavesurfer.getDuration() > 360) {
       toast("Please ensure audio is less than 6 minutes long");
     } else if (audioBlob) {
+      console.log(audioBlob.type);
       toast("Starting speaker diarization process, please wait :)");
       await getTranscriptions(audioBlob);
     } else {
@@ -441,7 +452,13 @@ export default function App() {
                 onPlay={() => setIsPlaying(true)}
                 onPause={() => setIsPlaying(false)}
               />
-              <Box sx={{ display: "flex", justifyContent: "space-evenly", marginTop:3}}>
+              <Box
+                sx={{
+                  display: "flex",
+                  justifyContent: "space-evenly",
+                  marginTop: 3,
+                }}
+              >
                 <Button
                   onClick={onPlayPause}
                   sx={{
