@@ -1,11 +1,12 @@
 output = []
 
+from TranscriptionSummarise import classify_speakers_with_context
+
 
 # Function to find speaker for a given timestamp range
 def find_speaker(timestamp, diarization_segments, transcription, recording_duration):
     temp = {}
     start, end = timestamp
-
 
     if end is None:
         end = recording_duration
@@ -115,8 +116,55 @@ def find_speaker(timestamp, diarization_segments, transcription, recording_durat
     return
 
 
+def cleanup_output(transcriptions):
+    i = 0
+    final_transcriptions = []
+    flag = False
+
+    while i < len(transcriptions):
+        j = i + 1
+
+        temp = [transcriptions[i]['transcription']]
+
+        ## loop until window no longer unique
+        while j < len(transcriptions) and transcriptions[i]['speaker'] == transcriptions[j]['speaker']:
+            ## append transcriptions
+            temp.append(transcriptions[j]['transcription'])
+            j = j + 1
+
+        if j >= len(transcriptions):
+            flag = True
+
+        # create timestamp
+
+        timestamp = [
+            transcriptions[i]['timestamp'][0],  # Start time is always from `transcriptions[i]`
+            transcriptions[i]['timestamp'][1] if j == i + 1 else (
+                transcriptions[-1]['timestamp'][1] if flag else transcriptions[j - 1]['timestamp'][1])
+        ]
+
+        # timestamp either is i's timestamp if j unchanged
+        # otherwise will be i's first timestamp and j's second timestamp to take first and last point
+        # transcription will be just list joined
+        final_transcriptions.append({
+            "speaker": transcriptions[i]['speaker'],
+            "timestamp": timestamp,
+            "transcription": " ".join(temp)
+        })
+
+        i = j
+
+    return final_transcriptions
+
+
+def correct_tags(uncleaned_transcriptions):
+    return classify_speakers_with_context(uncleaned_transcriptions)
+
+
 def generate_transcription(asr_transcriptions, speaker_diarization, recording_duration):
     for asr in asr_transcriptions:
         find_speaker(asr['timestamp'], speaker_diarization, asr['text'], recording_duration)
 
-    return output
+    tagged_output = correct_tags(output)
+    cleaned_output = cleanup_output(tagged_output)
+    return cleaned_output
