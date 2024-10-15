@@ -1,6 +1,15 @@
 import { useEffect, useRef, useState } from "react";
 import { ThemeProvider } from "@mui/material/styles";
-import { CssBaseline, useTheme } from "@mui/material";
+import {
+  CssBaseline,
+  FormControl,
+  InputLabel,
+  MenuItem,
+  Select,
+  SelectChangeEvent,
+  TextField,
+  useTheme,
+} from "@mui/material";
 import Typography from "@mui/material/Typography";
 import Box from "@mui/material/Box";
 import {
@@ -19,6 +28,7 @@ import {
   MessageRounded,
   Person,
   Upload,
+  LocalHospital,
 } from "@mui/icons-material";
 import WaveSurfer from "wavesurfer.js";
 import TimelinePlugin from "wavesurfer.js/dist/plugins/timeline";
@@ -33,23 +43,34 @@ import LoadingSpinnerScreen from "./LoadingSpinnerScreen";
 import { WaveFile } from "wavefile";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
+import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
+import { DatePicker } from "@mui/x-date-pickers";
+import dayjs, { Dayjs } from "dayjs";
+import ReactPDF, { PDFDownloadLink } from "@react-pdf/renderer";
+import { PDFFile } from "./Transcription";
 
-type Transcriptions = {
+export type Transcriptions = {
   speaker: string;
   timestamp: [number, number];
   transcription: string;
 };
 
 export default function App() {
+  const [personName, setPersonName] = useState("");
+  const [selectedTime, setSelectedTime] = useState<string>("00:00"); // Default time
+  const [open, setOpen] = useState(false); // State to control the dropdown
+  const [selectedDate, setSelectedDate] = useState<Dayjs | null>(dayjs()); // Initialize with the current date
+
   const [wavesurfer, setWavesurfer] = useState<WaveSurfer>();
   const [isPlaying, setIsPlaying] = useState(false);
   const [fileName, setfileName] = useState("Audio File Name");
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [mode, setMode] = useState<"light" | "dark">("dark"); // Manage theme mode
   const [audioBlob, setAudioBlob] = useState<Blob>();
-  const [transcriptions, setTranscriptions] = useState<Transcriptions[] | null>(
-    null
-  );
+  const [transcriptions, setTranscriptions] = useState<
+    Transcriptions[] | null
+  >();
   const [summary, setSummary] = useState<string>(
     "Upload or record an audio :)"
   );
@@ -77,10 +98,20 @@ export default function App() {
     wavesurfer?.registerPlugin(
       Hover.create({
         lineWidth: 1,
-        labelSize: "14px",
+        labelSize: "12px",
       })
     );
+    updateRemoveButton();
   }, [wavesurfer]);
+
+  const updateRemoveButton = () => {
+    const imgElement = document.querySelector(
+      ".custom-discard-class"
+    ) as HTMLImageElement;
+    if (imgElement) {
+      imgElement.src = "src/image/cross.webp"; // Clear the original image source
+    }
+  };
 
   const onPlayPause = () => {
     wavesurfer && wavesurfer.playPause();
@@ -241,7 +272,7 @@ export default function App() {
         }
 
         const summary = await summary_response.json();
-        setSummary(summary);
+        setSummary(summary.replace(/\*/g, ""));
         setIsSLoading(false);
         setIsSError(false);
         console.log(summary);
@@ -290,6 +321,51 @@ export default function App() {
     return `${formattedMinutes}:${formattedSeconds}`;
   };
 
+  // Generate time segments from 00:00 to 23:00 in 1-hour increments
+  const timeSegments = Array.from({ length: 24 }, (_, i) => {
+    const hour = i.toString().padStart(2, "0");
+    return `${hour}:00`;
+  });
+
+  const handleTimeChange = (event: SelectChangeEvent<string>) => {
+    setSelectedTime(event.target.value);
+  };
+
+  const handleIconClick = () => {
+    setOpen((prev) => !prev); // Toggle the dropdown state
+  };
+
+  const handleDateChange = (newValue: Dayjs | null) => {
+    setSelectedDate(newValue); // Update state with the new date
+  };
+
+  const handleDLPDF = () => {
+    if (!personName.length || selectedTime === "00:00") {
+      toast("Name or Time might be unchanged");
+    }
+  };
+
+  const handleDLAudio = () => {
+    if (!audioBlob) {
+      console.error("No audio file available for download.");
+      return;
+    }
+
+    // Create a URL for the audio blob
+    const audioUrl = URL.createObjectURL(audioBlob);
+
+    // Create an anchor element
+    const link = document.createElement("a");
+    link.href = audioUrl;
+    link.download = fileName + ".wav"; // Filename for the downloaded file
+
+    // Programmatically click the link to trigger the download
+    link.click();
+
+    // Clean up the URL object
+    URL.revokeObjectURL(audioUrl);
+  };
+
   return (
     <ThemeProvider theme={mode === "light" ? lightTheme : darkTheme}>
       <CssBaseline />
@@ -316,7 +392,7 @@ export default function App() {
               }}
             >
               <Typography variant="h5" sx={{ mr: 2 }} color="text.primary">
-                Doctor's Appointment
+                SmartScribe
               </Typography>
               <Divider
                 orientation="vertical"
@@ -333,14 +409,72 @@ export default function App() {
                 sx={{
                   borderRadius: 3,
                   marginLeft: 2,
+                  height: "40px",
                 }}
               >
-                <IconButton sx={{ color: "text.secondary" }}>
-                  <Event />
-                  <Typography variant="body2" sx={{ marginLeft: 1 }}>
-                    16 Aug 2024
-                  </Typography>
-                </IconButton>
+                <LocalizationProvider dateAdapter={AdapterDayjs}>
+                  <DatePicker
+                    value={selectedDate}
+                    onChange={handleDateChange}
+                    slotProps={{
+                      yearButton: {
+                        sx: {
+                          "&.Mui-selected, &.Mui-selected:hover, &.Mui-selected:focus":
+                            {
+                              backgroundColor: "lightblue !important", // Custom background for selected year
+                              color: "black !important", // Ensure text contrast
+                            },
+                        },
+                      },
+                      day: {
+                        sx: {
+                          "&.Mui-selected": {
+                            backgroundColor: "lightblue !important", // Set background color for selected day
+                            color: "black",
+                            "&:hover": {
+                              backgroundColor: "lightblue", // Set hover color for selected day
+                            },
+                          },
+                        },
+                      },
+                      layout: {
+                        sx: {
+                          backgroundColor: "secondary.main",
+                          borderRadius: 3,
+                        },
+                      },
+                      popper: {
+                        sx: {
+                          "& .MuiPaper-root": {
+                            backgroundColor: "secondary.main", // Set your custom background color here
+                            borderRadius: 3, // Add border-radius if desired
+                            boxShadow: "none", // Remove any default shadow
+                            color: "text.primary", // Set text color if needed
+                            marginTop: 0.5,
+                          },
+                        },
+                      },
+                      textField: {
+                        sx: {
+                          "& .MuiOutlinedInput-root": {
+                            border: "none", // Remove border
+                            height: "40px", // Set height
+                            width: "320px",
+                            "&:hover": {
+                              backgroundColor: "transparent", // Disable hover effect
+                            },
+                          },
+                          "& .MuiOutlinedInput-notchedOutline": {
+                            border: "none", // Remove outline border
+                          },
+                          "& .MuiSvgIcon-root": {
+                            color: "text.secondary", // Change the color of the calendar icon
+                          },
+                        },
+                      },
+                    }}
+                  />
+                </LocalizationProvider>
               </Box>
               <Box
                 bgcolor="secondary.main"
@@ -349,29 +483,180 @@ export default function App() {
                   marginLeft: 1,
                 }}
               >
-                <IconButton sx={{ color: "text.secondary" }}>
-                  <AccessTime />
-                  <Typography variant="body2" sx={{ marginLeft: 1 }}>
-                    1 pm - 2 pm
-                  </Typography>
-                </IconButton>
+                <FormControl
+                  variant="standard"
+                  sx={{
+                    minWidth: "120px",
+                    height: "40px",
+                  }}
+                >
+                  <Box
+                    sx={{
+                      display: "flex",
+                      justifyContent: "center",
+                      alignItems: "center",
+                      color: "text.secondary",
+                    }}
+                  >
+                    <AccessTime
+                      sx={{ marginRight: 1, cursor: "pointer" }}
+                      onClick={handleIconClick}
+                    />
+                    <Select
+                      value={selectedTime}
+                      onChange={handleTimeChange}
+                      open={open} // Control the open state
+                      onOpen={() => setOpen(true)} // Set to true when the dropdown opens
+                      onClose={() => setOpen(false)}
+                      sx={{
+                        width: "70px",
+                        marginTop: "5px",
+                        "&:before, &:after": {
+                          display: "none", // Hide the underline on focus and hover
+                        },
+                      }}
+                      MenuProps={{
+                        PaperProps: {
+                          sx: {
+                            backgroundColor: "secondary.main",
+                            padding: 0, // Remove padding from the Paper component
+                            marginTop: 1, // Remove margin to eliminate white space
+                            marginRight: "50px",
+                            width: "90px",
+                            borderRadius: 3,
+                          },
+                        },
+                        MenuListProps: {
+                          sx: {
+                            padding: 0, // Remove padding from the MenuList to eliminate excess space
+                            margin: 0,
+                            height: "335px",
+                          },
+                        },
+                      }}
+                    >
+                      {timeSegments.map((time) => (
+                        <MenuItem
+                          key={time}
+                          value={time}
+                          sx={{
+                            backgroundColor: "secondary.main", // Change background color
+                            color: "seconday.main", // Change text color
+                            justifyContent: "center", // Center the items in the dropdown
+                            "&:hover": {
+                              backgroundColor: "secondary.main", // Change background color on hover
+                            },
+                            "&.Mui-selected": {
+                              backgroundColor: "lightblue !important", // Change background color when selected
+                              color: "black",
+                              "&:hover": {
+                                backgroundColor: "lightblue !important", // Change background color on hover
+                                color: "seconday.main !important",
+                              },
+                            },
+                          }}
+                        >
+                          {time}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </Box>
+                </FormControl>
               </Box>
               <Box
                 bgcolor="secondary.main"
                 sx={{
                   borderRadius: 3,
                   marginLeft: 1,
+                  display: "flex",
+                  alignItems: "center",
                 }}
               >
                 <IconButton sx={{ color: "text.secondary" }}>
                   <Person />
-                  <Typography variant="body2" sx={{ marginLeft: 1 }}>
-                    Jane Doe
-                  </Typography>
                 </IconButton>
+
+                <TextField
+                  variant="standard"
+                  placeholder="Enter Name"
+                  value={personName}
+                  onChange={(e) => setPersonName(e.target.value)}
+                  sx={{
+                    marginLeft: 1,
+                  }}
+                  InputProps={{ disableUnderline: true }}
+                />
               </Box>
             </Box>
-            <IconButton onClick={handleThemeToggle} sx={{ marginLeft: "auto" }}>
+
+            <Box marginLeft={"auto"}>
+              {transcriptions ? (
+                transcriptions && (
+                  <PDFDownloadLink
+                    document={
+                      <PDFFile
+                        summary={summary}
+                        transcriptions={transcriptions}
+                        selectedDate={selectedDate}
+                        personName={personName}
+                        selectedTime={selectedTime}
+                      />
+                    }
+                    fileName={fileName + ".pdf"}
+                  >
+                    {/* github.com/diegomura/react-pdf/pull/2888/files */}
+                    {({ loading }) =>
+                      loading ? (
+                        <Button
+                          sx={{
+                            backgroundColor: "lightblue",
+                            color: "black",
+                            borderRadius: 2,
+                          }}
+                        >
+                          Loading PDF...
+                        </Button>
+                      ) : (
+                        <Button
+                          onClick={handleDLPDF}
+                          sx={{
+                            backgroundColor: "lightblue",
+                            color: "black",
+                            borderRadius: 2,
+                          }}
+                        >
+                          Download PDF
+                        </Button>
+                      )
+                    }
+                  </PDFDownloadLink>
+                )
+              ) : (
+                <Button
+                  disabled={true}
+                  sx={{
+                    backgroundColor: "lightblue",
+                    color: "black",
+                    borderRadius: 2,
+                  }}
+                >
+                  Download PDF
+                </Button>
+              )}
+            </Box>
+            <Button
+              onClick={handleDLAudio}
+              disabled={!audioBlob}
+              sx={{
+                backgroundColor: "lightblue",
+                color: "black",
+                borderRadius: 2,
+                marginLeft: "10px",
+              }}
+            >
+              Download Audio
+            </Button>
+            <IconButton onClick={handleThemeToggle} sx={{ marginLeft: "10px" }}>
               {mode === "light" ? (
                 <DarkModeIcon sx={{ color: "primary.dark" }} />
               ) : (
@@ -444,15 +729,18 @@ export default function App() {
                     mediaRecorderOptions={{
                       audioBitsPerSecond: 128000,
                     }}
-                    downloadOnSavePress={true}
+                    downloadOnSavePress={false}
                     downloadFileExtension="wav"
                     showVisualizer={true}
+                    classes={{
+                      AudioRecorderDiscardClass: "custom-discard-class",
+                    }}
                   />
                 </Box>
               </Box>
               {/* Placeholder for the waveform visual */}
               <Wave
-                height={200}
+                height={70}
                 waveColor={"lightblue"}
                 url="src/audio/ukfinf_noi_fem_mix_9_full.wav"
                 onReady={onReady}
@@ -484,12 +772,11 @@ export default function App() {
                     borderRadius: 2,
                   }}
                 >
-                  SPEAKER DIARIZATION!
+                  Transcribe/Summarise
                 </Button>
               </Box>
             </Card>
-
-            {/* Transcription Section */}
+            {/* Right Side: Summary Section */}
             <Card
               sx={{
                 bgcolor: "primary.main",
@@ -499,48 +786,42 @@ export default function App() {
                 overflow: "auto",
               }}
             >
-              <Box display="flex" alignItems="center" gap={2}>
-                <MessageRounded />
-                <Typography variant="h5">Transcription</Typography>
+              <Box
+                display="flex"
+                alignItems="center"
+                gap={2}
+                color={"text.secondary"}
+              >
+                <BookRounded />
+                <Typography variant="h5">Summary</Typography>
               </Box>
               <Divider
                 flexItem
                 sx={{ padding: "0.25px", my: 2, bgcolor: "primary.dark" }}
               />
-              {/* List of dialogues */}
-              {isTLoading ? (
+
+              {isSLoading ? (
                 <LoadingSpinnerScreen />
-              ) : isTError ? (
+              ) : isSError ? (
                 <Typography color="error">
-                  Error during speaker diarization process
+                  Error during summary process
                 </Typography>
               ) : (
-                transcriptions &&
-                transcriptions.map((transcription, index) => (
-                  <Box key={index}>
-                    <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
-                      <Person sx={{ mr: 2, color: "text.primary" }} />
-                      <Box>
-                        <Typography variant="subtitle1" color="text.primary">
-                          {transcription.speaker}
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary">
-                          {formatTimestamp(transcription.timestamp[0])} -{" "}
-                          {formatTimestamp(transcription.timestamp[1])} -{" "}
-                          {transcription.transcription}
-                        </Typography>
-                      </Box>
-                    </Box>
-                    <Divider
-                      flexItem
-                      sx={{ padding: "0.2px", my: 2, bgcolor: "primary.dark" }}
-                    />
-                  </Box>
-                ))
+                <Typography
+                  color="text.secondary"
+                  sx={{
+                    whiteSpace: "pre-line",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    wordBreak: "break-word",
+                  }}
+                >
+                  {summary}
+                </Typography>
               )}
             </Card>
           </Box>
-          {/* Right Side: Summary Section */}
+          {/* Transcription Section */}
           <Card
             sx={{
               bgcolor: "primary.main",
@@ -550,38 +831,67 @@ export default function App() {
               overflow: "auto",
             }}
           >
-            <Box
-              display="flex"
-              alignItems="center"
-              gap={2}
-              color={"text.secondary"}
-            >
-              <BookRounded />
-              <Typography variant="h5">Summary</Typography>
+            <Box display="flex" alignItems="center" gap={2}>
+              <MessageRounded />
+              <Typography variant="h5">Transcription</Typography>
             </Box>
             <Divider
               flexItem
               sx={{ padding: "0.25px", my: 2, bgcolor: "primary.dark" }}
             />
-
-            {isSLoading ? (
+            {/* List of dialogues */}
+            {isTLoading ? (
               <LoadingSpinnerScreen />
-            ) : isSError ? (
+            ) : isTError ? (
               <Typography color="error">
-                Error during summary process
+                Error during speaker diarization process
               </Typography>
             ) : (
-              <Typography
-                color="text.secondary"
-                sx={{
-                  whiteSpace: "pre-line",
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  wordBreak: "break-word",
-                }}
-              >
-                {summary}
-              </Typography>
+              transcriptions &&
+              transcriptions.map((transcription, index) => (
+                <Box key={index}>
+                  <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
+                    {transcription.speaker === "Doctor" ? (
+                      <LocalHospital sx={{ mr: 2, color: "text.primary" }} />
+                    ) : (
+                      <Person sx={{ mr: 2, color: "text.primary" }} />
+                    )}
+                    <Box>
+                      <Box
+                        sx={{ display: "flex", alignItems: "center" }}
+                        gap={1}
+                      >
+                        <Typography variant="subtitle1" color="text.primary">
+                          {transcription.speaker}
+                        </Typography>
+                        <Typography variant="subtitle1" color="text.primary">
+                          ~
+                        </Typography>
+                        <Typography
+                          variant="subtitle1"
+                          color="text.secondary"
+                          sx={{ textAlign: "end" }}
+                        >
+                          {formatTimestamp(transcription.timestamp[0])} -{" "}
+                          {formatTimestamp(transcription.timestamp[1])}
+                        </Typography>
+                      </Box>
+
+                      <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        sx={{ wordBreak: "break-word" }}
+                      >
+                        {transcription.transcription}
+                      </Typography>
+                    </Box>
+                  </Box>
+                  <Divider
+                    flexItem
+                    sx={{ padding: "0.2px", my: 2, bgcolor: "primary.dark" }}
+                  />
+                </Box>
+              ))
             )}
           </Card>
         </Box>
