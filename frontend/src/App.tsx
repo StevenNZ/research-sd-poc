@@ -354,10 +354,14 @@ export default function App() {
     // Create a URL for the audio blob
     const audioUrl = URL.createObjectURL(audioBlob);
 
+    const sanitizedFileName = fileName
+      .replace(/\s+/g, "_") // Replace spaces with underscores
+      .split(".")[0]; // Remove existing extension
+
     // Create an anchor element
     const link = document.createElement("a");
     link.href = audioUrl;
-    link.download = fileName + ".wav"; // Filename for the downloaded file
+    link.download = sanitizedFileName + "_" + selectedTime + ".wav"; // Filename for the downloaded file
 
     // Programmatically click the link to trigger the download
     link.click();
